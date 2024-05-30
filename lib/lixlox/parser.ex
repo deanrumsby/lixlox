@@ -1,6 +1,6 @@
 defmodule LixLox.Parser do
   @moduledoc """
-  A parser, built using parser combinators, for the Lox programming language
+  Lox parser
   """
 
   def parse(input) do
@@ -104,9 +104,14 @@ defmodule LixLox.Parser do
         literal -> literal
       end)
 
+  defp token(parser) do
+    sequence([ws(), parser, ws()])
+    |> map(fn [_, term, _] -> term end)
+  end
+
   # combinator for parsing a string
   defp string() do
-    sequence([char(?"), many(satisfy(char(), &(&1 != ?"))), char(?")])
+    token(sequence([char(?"), many(satisfy(char(), &(&1 != ?"))), char(?")]))
     |> map(fn [_, chars, _] -> to_string(chars) end)
   end
 
@@ -120,18 +125,18 @@ defmodule LixLox.Parser do
 
   # combinator for parsing a number
   defp number() do
-    sequence([some(digit()), optional(sequence([char(?.), some(digit())]))])
+    token(sequence([some(digit()), optional(sequence([char(?.), some(digit())]))]))
     |> map(fn
       [integer, nil] -> to_string(integer) |> String.to_integer()
       [integer, fractional] -> [integer | fractional] |> to_string() |> String.to_float()
     end)
   end
 
-  defp null(), do: chars([?n, ?i, ?l]) |> map(&List.to_atom/1)
+  defp null(), do: token(chars([?n, ?i, ?l])) |> map(&List.to_atom/1)
 
   # combinator for parsing booleans
   defp boolean() do
-    choice([chars([?t, ?r, ?u, ?e]), chars([?f, ?a, ?l, ?s, ?e])])
+    token(choice([chars([?t, ?r, ?u, ?e]), chars([?f, ?a, ?l, ?s, ?e])]))
     |> map(&List.to_atom/1)
   end
 
@@ -140,9 +145,6 @@ defmodule LixLox.Parser do
 
   # combinator for parsing whitespace 
   defp ws(), do: many(choice([char(?\s), char(?\n), char(?\t), char(?\r)]))
-
-  # combinator for parsing an ascii letter
-  defp ascii_letter(), do: satisfy(char(), &(&1 in ?a..?z or &1 in ?A..?Z))
 
   # combinator for parsing a single digit
   defp digit(), do: satisfy(char(), &(&1 in ?0..?9))
