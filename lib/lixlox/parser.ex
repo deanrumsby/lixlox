@@ -4,8 +4,49 @@ defmodule LixLox.Parser do
   """
 
   def parse(input) do
-    parser = term()
+    parser = expression()
     parser.(input)
+  end
+
+  # combinator for parsing expressions
+  defp expression(), do: equality()
+
+  # combinator for parsing equality comparisons
+  defp equality() do
+    sequence([
+      comparison(),
+      many(sequence([choice([chars([?!, ?=]), chars([?=, ?=])]), comparison()]))
+    ])
+    |> map(fn
+      [comparison, []] ->
+        comparison
+
+      [comparison_a, others] ->
+        Enum.reduce(others, comparison_a, fn
+          [[?!, ?=], comparison_b], prev -> {:not_equal, prev, comparison_b}
+          [[?=, ?=], comparison_b], prev -> {:equal, prev, comparison_b}
+        end)
+    end)
+  end
+
+  # combinator for parsing comparisons
+  defp comparison() do
+    sequence([
+      term(),
+      many(sequence([choice([chars([?>, ?=]), chars([?<, ?=]), char(?>), char(?<)]), term()]))
+    ])
+    |> map(fn
+      [term, []] ->
+        term
+
+      [term_a, others] ->
+        Enum.reduce(others, term_a, fn
+          [?>, term_b], prev -> {:greater, prev, term_b}
+          [?<, term_b], prev -> {:less, prev, term_b}
+          [[?>, ?=], term_b], prev -> {:greater_equal, prev, term_b}
+          [[?<, ?=], term_b], prev -> {:less_equal, prev, term_b}
+        end)
+    end)
   end
 
   # combinator for parsing a term expression
@@ -49,7 +90,19 @@ defmodule LixLox.Parser do
   end
 
   # combinator for parsing primaries
-  defp primary(), do: choice([number(), string(), boolean(), null()])
+  defp primary(),
+    do:
+      choice([
+        number(),
+        string(),
+        boolean(),
+        null(),
+        sequence([char(?(), lazy(fn -> expression() end), char(?))])
+      ])
+      |> map(fn
+        [?(, expression, ?)] -> expression
+        literal -> literal
+      end)
 
   # combinator for parsing a string
   defp string() do
