@@ -81,7 +81,7 @@ defmodule LixLox.Parser do
 
   # combinator for parsing a unary expression
   defp unary() do
-    choice([sequence([choice([char(?!), char(?-)]), lazy(fn -> unary() end)]), primary()])
+    token(choice([sequence([choice([char(?!), char(?-)]), lazy(fn -> unary() end)]), primary()]))
     |> map(fn
       [?!, unary] -> {:not, unary}
       [?-, unary] -> {:minus, unary}
@@ -97,7 +97,7 @@ defmodule LixLox.Parser do
         string(),
         boolean(),
         null(),
-        sequence([char(?(), lazy(fn -> expression() end), char(?))])
+        token(sequence([char(?(), lazy(fn -> expression() end), char(?))]))
       ])
       |> map(fn
         [?(, expression, ?)] -> expression
