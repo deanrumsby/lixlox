@@ -3,14 +3,17 @@ defmodule LixLox.Repl do
   A [R]ead [E]valuate [P]rint [L]oop for the Lox programming language.
   """
 
+  alias LixLox.Parser
+
   @prompt "lixlox> "
 
   @doc """
   Starts a REPL.
   """
   def loop() do
-    input = IO.gets(@prompt)
-    IO.puts(input)
+    IO.gets(@prompt)
+    |> Parser.parse()
+    |> IO.puts()
     loop()
   end
 end
