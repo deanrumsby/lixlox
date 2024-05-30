@@ -15,7 +15,7 @@ defmodule LixLox.Parser do
   defp equality() do
     sequence([
       comparison(),
-      many(sequence([choice([chars([?!, ?=]), chars([?=, ?=])]), comparison()]))
+      many(sequence([choice([chars(~c"!="), chars(~c"==")]), comparison()]))
     ])
     |> map(fn
       [comparison, []] ->
@@ -23,8 +23,8 @@ defmodule LixLox.Parser do
 
       [comparison_a, others] ->
         Enum.reduce(others, comparison_a, fn
-          [[?!, ?=], comparison_b], prev -> {:not_equal, prev, comparison_b}
-          [[?=, ?=], comparison_b], prev -> {:equal, prev, comparison_b}
+          [~c"!=", comparison_b], prev -> {:not_equal, prev, comparison_b}
+          [~c"==", comparison_b], prev -> {:equal, prev, comparison_b}
         end)
     end)
   end
@@ -33,7 +33,7 @@ defmodule LixLox.Parser do
   defp comparison() do
     sequence([
       term(),
-      many(sequence([choice([chars([?>, ?=]), chars([?<, ?=]), char(?>), char(?<)]), term()]))
+      many(sequence([choice([chars(~c">="), chars(~c"<="), char(?>), char(?<)]), term()]))
     ])
     |> map(fn
       [term, []] ->
@@ -43,8 +43,8 @@ defmodule LixLox.Parser do
         Enum.reduce(others, term_a, fn
           [?>, term_b], prev -> {:greater, prev, term_b}
           [?<, term_b], prev -> {:less, prev, term_b}
-          [[?>, ?=], term_b], prev -> {:greater_equal, prev, term_b}
-          [[?<, ?=], term_b], prev -> {:less_equal, prev, term_b}
+          [~c">=", term_b], prev -> {:greater_equal, prev, term_b}
+          [~c"<=", term_b], prev -> {:less_equal, prev, term_b}
         end)
     end)
   end
@@ -132,11 +132,11 @@ defmodule LixLox.Parser do
     end)
   end
 
-  defp null(), do: token(chars([?n, ?i, ?l])) |> map(&List.to_atom/1)
+  defp null(), do: token(chars(~c"nil")) |> map(&List.to_atom/1)
 
   # combinator for parsing booleans
   defp boolean() do
-    token(choice([chars([?t, ?r, ?u, ?e]), chars([?f, ?a, ?l, ?s, ?e])]))
+    token(choice([chars(~c"true"), chars(~c"false")]))
     |> map(&List.to_atom/1)
   end
 
