@@ -4,6 +4,7 @@ defmodule LixLox.Repl do
   """
 
   alias LixLox.Parser
+  alias LixLox.Interpreter
 
   @prompt "lixlox> "
 
@@ -11,9 +12,15 @@ defmodule LixLox.Repl do
   Starts a REPL.
   """
   def loop() do
-    IO.gets(@prompt)
-    |> Parser.parse()
-    |> IO.puts()
+    input = IO.gets(@prompt)
+
+    with {:ok, ast, _rest} <- Parser.parse(input) do
+      ast
+      |> Interpreter.interpret()
+      |> to_string()
+      |> IO.puts()
+    end
+
     loop()
   end
 end
