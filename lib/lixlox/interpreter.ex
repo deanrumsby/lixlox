@@ -4,7 +4,10 @@ defmodule LixLox.Interpreter do
   """
 
   def interpret(statement, env)
-  def interpret({:define, identifer, a}, env), do: {nil, define(identifer, resolve(a, env), env)}
+  def interpret({:define, identifer, a}, env) do 
+    {value, env} = interpret(a, env)
+    {value, define(identifer, value, env)}
+  end
 
   def interpret({:print, a}, env) do
     print(resolve(a, env))

@@ -44,7 +44,15 @@ defmodule LixLox.Parser do
   end
 
   # combinator for parsing expressions
-  defp expression(), do: equality()
+  defp expression(), do: assignment()
+
+  defp assignment() do
+    choice([sequence([identifier(), char(?=), lazy(fn -> assignment() end)]), equality()])
+    |> map(fn 
+      [identifier, ?=, expression] -> {:define, identifier, expression}
+      equality -> equality
+      end)
+  end
 
   # combinator for parsing equality comparisons
   defp equality() do
