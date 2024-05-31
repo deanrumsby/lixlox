@@ -3,21 +3,44 @@ defmodule LixLox.Interpreter do
   An interpreter for the Lox language
   """
 
-  def interpret(ast)
-  def interpret({:print, a}), do: print(interpret(a))
-  def interpret({:minus, a}), do: minus(interpret(a))
-  def interpret({:not, a}), do: bang(interpret(a))
-  def interpret({:divide, a, b}), do: divide(interpret(a), interpret(b))
-  def interpret({:multiply, a, b}), do: multiply(interpret(a), interpret(b))
-  def interpret({:subtract, a, b}), do: subtract(interpret(a), interpret(b))
-  def interpret({:add, a, b}), do: add(interpret(a), interpret(b))
-  def interpret({:greater, a, b}), do: greater_than(interpret(a), interpret(b))
-  def interpret({:greater_equal, a, b}), do: greater_than_equal(interpret(a), interpret(b))
-  def interpret({:less, a, b}), do: less_than(interpret(a), interpret(b))
-  def interpret({:less_equal, a, b}), do: less_than_equal(interpret(a), interpret(b))
-  def interpret({:equal, a, b}), do: equal(interpret(a), interpret(b))
-  def interpret({:not_equal, a, b}), do: not_equal(interpret(a), interpret(b))
-  def interpret(literal), do: literal
+  def interpret(statement, env)
+  def interpret({:define, identifer, a}, env), do: {nil, define(identifer, resolve(a, env), env)}
+
+  def interpret({:print, a}, env) do
+    print(resolve(a, env))
+    {nil, env}
+  end
+
+  def interpret({:minus, a}, env), do: {minus(resolve(a, env)), env}
+  def interpret({:not, a}, env), do: {bang(resolve(a, env)), env}
+  def interpret({:divide, a, b}, env), do: {divide(resolve(a, env), resolve(b, env)), env}
+  def interpret({:multiply, a, b}, env), do: {multiply(resolve(a, env), resolve(b, env)), env}
+  def interpret({:subtract, a, b}, env), do: {subtract(resolve(a, env), resolve(b, env)), env}
+  def interpret({:add, a, b}, env), do: {add(resolve(a, env), resolve(b, env)), env}
+  def interpret({:greater, a, b}, env), do: {greater_than(resolve(a, env), resolve(b, env)), env}
+
+  def interpret({:greater_equal, a, b}, env),
+    do: {greater_than_equal(resolve(a, env), resolve(b, env)), env}
+
+  def interpret({:less, a, b}, env), do: {less_than(resolve(a, env), resolve(b, env)), env}
+
+  def interpret({:less_equal, a, b}, env),
+    do: {less_than_equal(resolve(a, env), resolve(b, env)), env}
+
+  def interpret({:equal, a, b}, env), do: {equal(resolve(a, env), resolve(b, env)), env}
+  def interpret({:not_equal, a, b}, env), do: {not_equal(resolve(a, env), resolve(b, env)), env}
+  def interpret(identifier, env) when is_atom(identifier), do: {env[identifier], env}
+  def interpret(literal, env), do: {literal, env}
+
+  defp resolve(expression, env) do
+    expression
+    |> interpret(env)
+    |> elem(0)
+  end
+
+  defp define(identifier, value, env) do
+    Map.put(env, identifier, value)
+  end
 
   defp print(a), do: IO.puts(a)
 

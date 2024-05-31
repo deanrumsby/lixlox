@@ -7,7 +7,7 @@ defmodule LixLox.Parser do
     parser = program()
 
     case parser.(input) do
-      {:ok, _ast, rest} when rest != "" -> {:error, "something went wrong"}
+      {:ok, _declarations, rest} when rest != "" -> {:error, "something went wrong"}
       result -> result
     end
   end
@@ -26,8 +26,8 @@ defmodule LixLox.Parser do
       ])
     )
     |> map(fn
-      [_, identifier, nil, _] -> {:variable, identifier, nil}
-      [_, identifier, [_, expression], _] -> {:variable, identifier, expression}
+      [_, identifier, nil, _] -> {:define, identifier, nil}
+      [_, identifier, [_, expression], _] -> {:define, identifier, expression}
     end)
   end
 
@@ -132,7 +132,8 @@ defmodule LixLox.Parser do
         string(),
         boolean(),
         null(),
-        token(sequence([char(?(), lazy(fn -> expression() end), char(?))]))
+        token(sequence([char(?(), lazy(fn -> expression() end), char(?))])),
+        identifier()
       ])
       |> map(fn
         [?(, expression, ?)] -> expression

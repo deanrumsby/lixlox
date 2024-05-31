@@ -29,7 +29,6 @@ oriented strategies used in the book.
 
 ## Status
 
-I have just finished building the parsers required for the arithmetic expressions supported by Lox.
-
-Currently my parser combinator implementation has almost no error handling, so learning how to approach this
-is a strong priority.
+Currently I am able to parse and interpret all arithmetic expressions and basic logical operators with the basic types.
+I have an environment implementation now in place so you are able to assign variables and use them within
+expressions.

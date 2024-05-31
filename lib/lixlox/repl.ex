@@ -11,19 +11,19 @@ defmodule LixLox.Repl do
   @doc """
   Starts a REPL.
   """
-  def loop() do
+  def loop(env \\ %{}) do
     input = IO.gets(@prompt)
 
     case Parser.parse(input) do
-      {:ok, ast, _rest} -> 
-        ast
-        |> Interpreter.interpret()
-    
-      {:error, reason} ->
-        reason
-        |> IO.puts()
-    end
+      {:ok, statements, _rest} ->
+        
+        statements
+        |> Enum.reduce(env, &elem(Interpreter.interpret(&1, &2), 1))
+        |> loop()
 
-    loop()
+      {:error, reason} ->
+        IO.puts(reason)
+        loop(env)
+    end
   end
 end
