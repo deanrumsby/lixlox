@@ -18,8 +18,6 @@ defmodule LixLox.Repl do
       {:ok, ast, _rest} -> 
         ast
         |> Interpreter.interpret()
-        |> to_string()
-        |> IO.puts()
     
       {:error, reason} ->
         reason

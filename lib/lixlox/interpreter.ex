@@ -4,6 +4,7 @@ defmodule LixLox.Interpreter do
   """
 
   def interpret(ast)
+  def interpret({:print, a}), do: print(interpret(a))
   def interpret({:minus, a}), do: minus(interpret(a))
   def interpret({:not, a}), do: bang(interpret(a))
   def interpret({:divide, a, b}), do: divide(interpret(a), interpret(b))
@@ -17,6 +18,8 @@ defmodule LixLox.Interpreter do
   def interpret({:equal, a, b}), do: equal(interpret(a), interpret(b))
   def interpret({:not_equal, a, b}), do: not_equal(interpret(a), interpret(b))
   def interpret(literal), do: literal
+
+  defp print(a), do: IO.puts(a)
 
   defp minus(a) when is_number(a), do: -1 * a
   defp minus(_a), do: "minus error: unexpted type"
@@ -50,8 +53,8 @@ defmodule LixLox.Interpreter do
   defp less_than_equal(_a, _b), do: "less than equal error: unexpected type"
 
   defp equal(a, b) when is_number(a) and is_number(b), do: a == b
-  defp equal(_a, _b), do: "equal error: unexpected type"
+  defp equal(a, b), do: a === b
 
   defp not_equal(a, b) when is_number(a) and is_number(b), do: a != b
-  defp not_equal(_a, _b), do: "not equal error: unexpected type"
+  defp not_equal(a, b), do: a !== b
 end

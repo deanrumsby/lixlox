@@ -4,11 +4,43 @@ defmodule LixLox.Parser do
   """
 
   def parse(input) do
-    parser = expression()
+    parser = program()
+
     case parser.(input) do
       {:ok, _ast, rest} when rest != "" -> {:error, "something went wrong"}
       result -> result
     end
+  end
+
+  defp program(), do: many(declaration())
+
+  defp declaration(), do: choice([variable_declaration(), statement()])
+
+  defp variable_declaration() do
+    token(
+      sequence([
+        chars(~c"var"),
+        identifier(),
+        optional(sequence([char(?=), expression()])),
+        char(?;)
+      ])
+    )
+    |> map(fn
+      [_, identifier, nil, _] -> {:variable, identifier, nil}
+      [_, identifier, [_, expression], _] -> {:variable, identifier, expression}
+    end)
+  end
+
+  defp statement(), do: choice([print_statement(), expression_statement()])
+
+  defp expression_statement() do
+    token(sequence([expression(), char(?;)]))
+    |> map(fn [expression, _] -> expression end)
+  end
+
+  defp print_statement() do
+    token(sequence([chars(~c"print"), expression(), char(?;)]))
+    |> map(fn [_, expression, _] -> {:print, expression} end)
   end
 
   # combinator for parsing expressions
@@ -118,6 +150,11 @@ defmodule LixLox.Parser do
     |> map(fn [_, chars, _] -> to_string(chars) end)
   end
 
+  defp identifier() do
+    token(sequence([alpha(), many(alpha_numeric())]))
+    |> map(fn [first, others] -> List.to_atom([first | others]) end)
+  end
+
   # combinator that allows us to evaluate other combinators lazily
   defp lazy(combinator) do
     fn input ->
@@ -149,6 +186,10 @@ defmodule LixLox.Parser do
   # combinator for parsing whitespace 
   defp ws(), do: many(choice([char(?\s), char(?\n), char(?\t), char(?\r)]))
 
+  defp alpha_numeric(), do: choice([alpha(), digit()])
+
+  defp alpha(), do: satisfy(char(), &(&1 in ?a..?z or &1 in ?A..?Z or &1 == ?_))
+
   # combinator for parsing a single digit
   defp digit(), do: satisfy(char(), &(&1 in ?0..?9))
 
@@ -156,7 +197,7 @@ defmodule LixLox.Parser do
   defp chars(expected), do: sequence(Enum.map(expected, &char(&1)))
 
   # combinator for parsing a single specified character
-  defp char(expected) do 
+  defp char(expected) do
     satisfy(char(), &(&1 == expected))
     |> error(fn _reason -> "expected character `#{<<expected::utf8>>}`" end)
   end
