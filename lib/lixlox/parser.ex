@@ -5,7 +5,10 @@ defmodule LixLox.Parser do
 
   def parse(input) do
     parser = expression()
-    parser.(input)
+    case parser.(input) do
+      {:ok, _ast, rest} when rest != "" -> {:error, "something went wrong"}
+      result -> result
+    end
   end
 
   # combinator for parsing expressions
@@ -153,7 +156,10 @@ defmodule LixLox.Parser do
   defp chars(expected), do: sequence(Enum.map(expected, &char(&1)))
 
   # combinator for parsing a single specified character
-  defp char(expected), do: satisfy(char(), &(&1 == expected))
+  defp char(expected) do 
+    satisfy(char(), &(&1 == expected))
+    |> error(fn _reason -> "expected character `#{<<expected::utf8>>}`" end)
+  end
 
   # combinator for parsing an optional term
   defp optional(parser), do: &parse_optional(&1, parser)
@@ -175,6 +181,14 @@ defmodule LixLox.Parser do
 
   # combinator for parsing a single character
   defp char(), do: &parse_char(&1)
+
+  defp error(parser, reporter), do: &parse_error(&1, parser, reporter)
+
+  defp parse_error(input, parser, reporter) do
+    with {:error, reason} <- parser.(input) do
+      {:error, reporter.(reason)}
+    end
+  end
 
   # parses an optional term
   defp parse_optional(input, parser) do
