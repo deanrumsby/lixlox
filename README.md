@@ -22,9 +22,10 @@ I recently watched an amazing (and eye opening) talk by Saša Jurić called
 [Parsing from first principles](https://youtu.be/xNzoerDljjo?si=_6cGS0hWjO0QA822)
 where he explains a method of parsing known as parser combinators. I had not seen this method before, and
 simultaneously I had been slowly progressing through another amazing resource
-[Crafting Interpreters by Robert Nystrom](https://craftinginterpreters.com) but wanting to write the initial
-tree walking interpreter in a language other than Java. LixLox is my attempt at learning how to build such an
-interpreter using parser combinators.
+[Crafting Interpreters](https://craftinginterpreters.com) by Robert Nystrom, but found myself wanting to write the
+initial tree walking interpreter in a language other than Java. LixLox is my attempt at writing the interpreter with a
+functional programming language, and using parser combinators to build the parsing engine, instead of the object
+oriented strategies used in the book.
 
 ## Status
 
