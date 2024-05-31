@@ -16,6 +16,10 @@ brew install elixir
 
 Start a LixLox repl with `mix repl`.
 
+## File
+
+You can run a lox script with `mix file <path>`
+
 ## Journey
 
 I recently watched an amazing (and eye opening) talk by Saša Jurić called

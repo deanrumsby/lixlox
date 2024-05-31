@@ -18,7 +18,7 @@ defmodule LixLox.Repl do
       {:ok, statements, _rest} ->
         
         statements
-        |> Enum.reduce(env, &elem(Interpreter.interpret(&1, &2), 1))
+        |> Enum.reduce(env, &Interpreter.interpret(&1, &2) |> elem(1))
         |> loop()
 
       {:error, reason} ->
