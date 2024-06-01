@@ -3,93 +3,104 @@ defmodule LixLox.Interpreter do
   An interpreter for the Lox language
   """
 
+  alias LixLox.Parser
+
   @doc """
   Interprets a Lox abstract syntax tree.
+
+  ## Example
+    iex> LixLox.Interpreter.interpret([{:print {:add, {:literal, "hello"}, {:literal, ", world!"}}}])
+    "hello, world!"
   """
-  @spec interpret(LixLox.Parser.ast(), map()) :: {LixLox.Parser.ast(), map()}
-  def interpret(ast, env)
+  @spec interpret(list(Parser.ast()), map()) :: map()
+  def interpret(statements, env \\ %{}) do
+    statements
+    |> Enum.reduce(env, &run(&1, &2)
+    |> elem(1))
+  end
 
-  def interpret({:literal, value}, env), do: {value, env}
-  def interpret({:identifier, a}, env), do: {env[a], env}
+  defp run(ast, env)
+  defp run({:literal, value}, env), do: {value, env}
+  defp run({:identifier, a}, env), do: {env[a], env}
 
-  def interpret({:define, {:identifier, identifer}, a}, env) do
-    {value, env} = interpret(a, env)
+  defp run({:define, {:identifier, identifer}, a}, env) do
+    {value, env} = run(a, env)
     {value, define(identifer, value, env)}
   end
 
-  def interpret({:print, a}, env) do
-    {value, env} = interpret(a, env)
+  defp run({:print, a}, env) do
+    {value, env} = run(a, env)
     print(value)
     {nil, env}
   end
 
-  def interpret({:minus, a}, env) do
-    {a, env} = interpret(a, env)
+  defp run({:minus, a}, env) do
+    {a, env} = run(a, env)
     {minus(a), env}
   end
 
-  def interpret({:not, a}, env) do
-    {a, env} = interpret(a, env)
+  defp run({:not, a}, env) do
+    {a, env} = run(a, env)
     {bang(a), env}
   end
 
-  def interpret({:divide, a, b}, env) do
-    {a, env} = interpret(a, env)
-    {b, env} = interpret(b, env)
+  defp run({:divide, a, b}, env) do
+    {a, env} = run(a, env)
+    {b, env} = run(b, env)
     {divide(a, b), env}
   end
 
-  def interpret({:multiply, a, b}, env) do
-    {a, env} = interpret(a, env)
-    {b, env} = interpret(b, env)
+  defp run({:multiply, a, b}, env) do
+    {a, env} = run(a, env)
+    {b, env} = run(b, env)
     {multiply(a, b), env}
   end
 
-  def interpret({:subtract, a, b}, env) do
-    {a, env} = interpret(a, env)
-    {b, env} = interpret(b, env)
+  defp run({:subtract, a, b}, env) do
+    {a, env} = run(a, env)
+    {b, env} = run(b, env)
     {subtract(a, b), env}
   end
 
-  def interpret({:add, a, b}, env) do
-    {a, env} = interpret(a, env)
-    {b, env} = interpret(b, env)
+  defp run({:add, a, b}, env) do
+    {a, env} = run(a, env)
+    {b, env} = run(b, env)
     {add(a, b), env}
   end
 
-  def interpret({:greater, a, b}, env) do
-    {a, env} = interpret(a, env)
-    {b, env} = interpret(b, env)
+  defp run({:greater, a, b}, env) do
+    {a, env} = run(a, env)
+    {b, env} = run(b, env)
     {greater_than(a, b), env}
   end
 
-  def interpret({:greater_equal, a, b}, env) do
-    {a, env} = interpret(a, env)
-    {b, env} = interpret(b, env)
+  defp run({:greater_equal, a, b}, env) do
+    {a, env} = run(a, env)
+    {b, env} = run(b, env)
     {greater_than_equal(a, b), env}
   end
 
-  def interpret({:less, a, b}, env) do
-    {a, env} = interpret(a, env)
-    {b, env} = interpret(b, env)
+  defp run({:less, a, b}, env) do
+    {a, env} = run(a, env)
+    {b, env} = run(b, env)
     {less_than(a, b), env}
   end
 
-  def interpret({:less_equal, a, b}, env) do
-    {a, env} = interpret(a, env)
-    {b, env} = interpret(b, env)
+  defp run({:less_equal, a, b}, env) do
+    {a, env} = run(a, env)
+    {b, env} = run(b, env)
     {less_than_equal(a, b), env}
   end
 
-  def interpret({:equal, a, b}, env) do
-    {a, env} = interpret(a, env)
-    {b, env} = interpret(b, env)
+  defp run({:equal, a, b}, env) do
+    {a, env} = run(a, env)
+    {b, env} = run(b, env)
     {equal(a, b), env}
   end
 
-  def interpret({:not_equal, a, b}, env) do
-    {a, env} = interpret(a, env)
-    {b, env} = interpret(b, env)
+  defp run({:not_equal, a, b}, env) do
+    {a, env} = run(a, env)
+    {b, env} = run(b, env)
     {not_equal(a, b), env}
   end
 

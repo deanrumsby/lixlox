@@ -201,6 +201,7 @@ defmodule LixLox.Parser do
   defp string() do
     token(sequence([char(?"), many(satisfy(char(), &(&1 != ?"))), char(?")]))
     |> map(fn [_, chars, _] -> to_string(chars) end)
+    |> map(fn string -> {:literal, string} end)
   end
 
   defp identifier() do

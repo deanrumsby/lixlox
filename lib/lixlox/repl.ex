@@ -16,9 +16,8 @@ defmodule LixLox.Repl do
 
     case Parser.parse(input) do
       {:ok, statements, _rest} ->
-        
         statements
-        |> Enum.reduce(env, &Interpreter.interpret(&1, &2) |> elem(1))
+        |> Interpreter.interpret()
         |> loop()
 
       {:error, reason} ->
