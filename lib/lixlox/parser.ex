@@ -3,6 +3,33 @@ defmodule LixLox.Parser do
   Lox parser
   """
 
+  @type literal :: number() | String.t() | boolean() | nil
+
+  @type ast ::
+          literal
+          | {:define, atom(), ast()}
+          | {:print, ast()}
+          | {:not_equal, ast(), ast()}
+          | {:equal, ast(), ast()}
+          | {:greater, ast(), ast()}
+          | {:less, ast(), ast()}
+          | {:greater_equal, ast(), ast()}
+          | {:less_equal, ast(), ast()}
+          | {:subtract, ast(), ast()}
+          | {:add, ast(), ast()}
+          | {:divide, ast(), ast()}
+          | {:multiply, ast(), ast()}
+          | {:not, ast()}
+          | {:minus, ast()}
+
+  @doc """
+  Takes text as input and transforms it into a list of parsed statements / declarations.
+
+  ## Example
+    iex> LixLox.Parser.parse("var a = 3; print a + 2;")
+    [{:define :a 3}, {:print {:add :a 2}}]
+  """
+  @spec parse(String.t()) :: {:ok, list(ast()), String.t()} | {:error, String.t()}
   def parse(input) do
     parser = program()
 
@@ -12,10 +39,13 @@ defmodule LixLox.Parser do
     end
   end
 
+  # program -> declaration*
   defp program(), do: many(declaration())
 
+  # declaration -> varDecl | statement
   defp declaration(), do: choice([variable_declaration(), statement()])
 
+  # varDecl -> "var" IDENTIFIER ( "=" expression )? ";"
   defp variable_declaration() do
     token(
       sequence([
@@ -31,30 +61,35 @@ defmodule LixLox.Parser do
     end)
   end
 
-  defp statement(), do: choice([print_statement(), expression_statement()])
+  # statement -> exprStmt | printStmt
+  defp statement(), do: choice([expression_statement(), print_statement()])
 
+  # exprStmt -> expression ";"
   defp expression_statement() do
     token(sequence([expression(), char(?;)]))
     |> map(fn [expression, _] -> expression end)
   end
 
+  # printStmt -> "print" expression ";"
   defp print_statement() do
     token(sequence([chars(~c"print"), expression(), char(?;)]))
     |> map(fn [_, expression, _] -> {:print, expression} end)
   end
 
-  # combinator for parsing expressions
+  # expression -> assignment
   defp expression(), do: assignment()
 
+  # assignment -> IDENTIFIER "=" assignment 
+  #               | equality
   defp assignment() do
     choice([sequence([identifier(), char(?=), lazy(fn -> assignment() end)]), equality()])
-    |> map(fn 
+    |> map(fn
       [identifier, ?=, expression] -> {:define, identifier, expression}
       equality -> equality
-      end)
+    end)
   end
 
-  # combinator for parsing equality comparisons
+  # equality -> comparison ( ( "!=" | "==" ) comparison )*
   defp equality() do
     sequence([
       comparison(),
@@ -72,7 +107,9 @@ defmodule LixLox.Parser do
     end)
   end
 
-  # combinator for parsing comparisons
+  # comparison -> term ( ( ">" | ">=" | "<" | "<=" ) term )*
+  #
+  # we have to check the longer lexemes first to avoid incorrect matches
   defp comparison() do
     sequence([
       term(),
@@ -92,7 +129,7 @@ defmodule LixLox.Parser do
     end)
   end
 
-  # combinator for parsing a term expression
+  # term -> factor ( ( "-" | "+" ) factor )*
   defp term() do
     sequence([factor(), many(sequence([choice([char(?-), char(?+)]), factor()]))])
     |> map(fn
@@ -107,7 +144,7 @@ defmodule LixLox.Parser do
     end)
   end
 
-  # combinator for parsing a factor expression
+  # factor -> unary ( ( "/" | "*" ) unary )*
   defp factor() do
     sequence([unary(), many(sequence([choice([char(?/), char(?*)]), unary()]))])
     |> map(fn
@@ -122,7 +159,8 @@ defmodule LixLox.Parser do
     end)
   end
 
-  # combinator for parsing a unary expression
+  # unary -> ( "!" | "-" ) unary
+  #          | primary
   defp unary() do
     token(choice([sequence([choice([char(?!), char(?-)]), lazy(fn -> unary() end)]), primary()]))
     |> map(fn
@@ -132,7 +170,9 @@ defmodule LixLox.Parser do
     end)
   end
 
-  # combinator for parsing primaries
+  # primary -> NUMBER | STRING | "true" | "false" | "nil"
+  #            | "(" expression ")"
+  #            | IDENTIFIER
   defp primary(),
     do:
       choice([
@@ -148,12 +188,12 @@ defmodule LixLox.Parser do
         literal -> literal
       end)
 
+  # trims whitespace from either side of match
   defp token(parser) do
     sequence([ws(), parser, ws()])
     |> map(fn [_, term, _] -> term end)
   end
 
-  # combinator for parsing a string
   defp string() do
     token(sequence([char(?"), many(satisfy(char(), &(&1 != ?"))), char(?")]))
     |> map(fn [_, chars, _] -> to_string(chars) end)
@@ -164,7 +204,7 @@ defmodule LixLox.Parser do
     |> map(fn [first, others] -> List.to_atom([first | others]) end)
   end
 
-  # combinator that allows us to evaluate other combinators lazily
+  # allows lazy evaluation of a combinator by deferring evaluation until call time
   defp lazy(combinator) do
     fn input ->
       parser = combinator.()
@@ -172,7 +212,6 @@ defmodule LixLox.Parser do
     end
   end
 
-  # combinator for parsing a number
   defp number() do
     token(sequence([some(digit()), optional(sequence([char(?.), some(digit())]))]))
     |> map(fn
@@ -183,55 +222,56 @@ defmodule LixLox.Parser do
 
   defp null(), do: token(chars(~c"nil")) |> map(&List.to_atom/1)
 
-  # combinator for parsing booleans
   defp boolean() do
     token(choice([chars(~c"true"), chars(~c"false")]))
     |> map(&List.to_atom/1)
   end
 
-  # combinator for parsing at least one term of a specified type
+  # matches one or more
   defp some(parser), do: sequence([parser, many(parser)])
 
-  # combinator for parsing whitespace 
+  # matches multiple whitespace characters
   defp ws(), do: many(choice([char(?\s), char(?\n), char(?\t), char(?\r)]))
 
+  # matches [a-zA-Z0-9_]
   defp alpha_numeric(), do: choice([alpha(), digit()])
 
+  # matches [a-zA-Z_]
   defp alpha(), do: satisfy(char(), &(&1 in ?a..?z or &1 in ?A..?Z or &1 == ?_))
 
-  # combinator for parsing a single digit
+  # matches [0-9]
   defp digit(), do: satisfy(char(), &(&1 in ?0..?9))
 
-  # combinator for parsing multiple chars in sequence
+  # takes a charlist eg. chars(~c"hello") to match against
   defp chars(expected), do: sequence(Enum.map(expected, &char(&1)))
 
-  # combinator for parsing a single specified character
+  # matches a single expected character
   defp char(expected) do
     satisfy(char(), &(&1 == expected))
     |> error(fn _reason -> "expected character `#{<<expected::utf8>>}`" end)
   end
 
-  # combinator for parsing an optional term
+  # matches zero or one declared term
   defp optional(parser), do: &parse_optional(&1, parser)
 
-  # combinator for mapping a parsed term via a lambda
+  # using mapper to transform parsed term
   defp map(parser, mapper), do: &parse_map(&1, parser, mapper)
 
-  # combinator for parsing a sequence of specified terms
+  # allows matching a sequence of terms
   defp sequence(parsers), do: &parse_sequence(&1, parsers)
 
-  # combinator for parsing terms via one of several provided parsers  
+  # matches against a choice of one or more terms
   defp choice(parsers), do: &parse_choice(&1, parsers)
 
-  # combinator for parsing many (zero or more) of a specified term
+  # matches zero or more declared terms
   defp many(parser), do: &parse_many(&1, parser)
 
-  # combinator for parsing terms that pass a provided test
+  # only matches if term passes acceptor test
   defp satisfy(parser, acceptor), do: &parse_satisfy(&1, parser, acceptor)
 
-  # combinator for parsing a single character
   defp char(), do: &parse_char(&1)
 
+  # catches/ transforms the error message used 
   defp error(parser, reporter), do: &parse_error(&1, parser, reporter)
 
   defp parse_error(input, parser, reporter) do
@@ -240,7 +280,6 @@ defmodule LixLox.Parser do
     end
   end
 
-  # parses an optional term
   defp parse_optional(input, parser) do
     case parser.(input) do
       {:ok, term, rest} -> {:ok, term, rest}
@@ -248,14 +287,12 @@ defmodule LixLox.Parser do
     end
   end
 
-  # parses a term and then maps it via a provided mapper function
   defp parse_map(input, parser, mapper) do
     with {:ok, term, rest} <- parser.(input) do
       {:ok, mapper.(term), rest}
     end
   end
 
-  # parses a sequence of terms 
   defp parse_sequence(input, parsers)
   defp parse_sequence(input, []), do: {:ok, [], input}
 
@@ -266,7 +303,6 @@ defmodule LixLox.Parser do
     end
   end
 
-  # parses one of a choice of terms
   defp parse_choice(input, parsers)
   defp parse_choice(_input, []), do: {:error, "no parser succeeded"}
 
@@ -276,7 +312,6 @@ defmodule LixLox.Parser do
     end
   end
 
-  # parses many of a term
   defp parse_many(input, parser) do
     case parser.(input) do
       {:error, _reason} ->
@@ -288,7 +323,6 @@ defmodule LixLox.Parser do
     end
   end
 
-  # parses a term satisfying a given condition
   defp parse_satisfy(input, parser, acceptor) do
     with {:ok, term, rest} <- parser.(input) do
       if acceptor.(term) do
@@ -299,7 +333,6 @@ defmodule LixLox.Parser do
     end
   end
 
-  # parses any single character
   defp parse_char(input)
   defp parse_char(""), do: {:error, "unexpected eof"}
   defp parse_char(<<char::utf8, rest::binary>>), do: {:ok, char, rest}
