@@ -3,47 +3,98 @@ defmodule LixLox.Interpreter do
   An interpreter for the Lox language
   """
 
-  def interpret(statement, env)
-  def interpret({:define, identifer, a}, env) do 
+  @doc """
+  Interprets a Lox abstract syntax tree.
+  """
+  @spec interpret(LixLox.Parser.ast(), map()) :: {LixLox.Parser.ast(), map()}
+  def interpret(ast, env)
+
+  def interpret({:literal, value}, env), do: {value, env}
+  def interpret({:identifier, a}, env), do: {env[a], env}
+
+  def interpret({:define, {:identifier, identifer}, a}, env) do
     {value, env} = interpret(a, env)
     {value, define(identifer, value, env)}
   end
 
   def interpret({:print, a}, env) do
-    print(resolve(a, env))
+    {value, env} = interpret(a, env)
+    print(value)
     {nil, env}
   end
 
-  def interpret({:minus, a}, env), do: {minus(resolve(a, env)), env}
-  def interpret({:not, a}, env), do: {bang(resolve(a, env)), env}
-  def interpret({:divide, a, b}, env), do: {divide(resolve(a, env), resolve(b, env)), env}
-  def interpret({:multiply, a, b}, env), do: {multiply(resolve(a, env), resolve(b, env)), env}
-  def interpret({:subtract, a, b}, env), do: {subtract(resolve(a, env), resolve(b, env)), env}
-  def interpret({:add, a, b}, env), do: {add(resolve(a, env), resolve(b, env)), env}
-  def interpret({:greater, a, b}, env), do: {greater_than(resolve(a, env), resolve(b, env)), env}
-
-  def interpret({:greater_equal, a, b}, env),
-    do: {greater_than_equal(resolve(a, env), resolve(b, env)), env}
-
-  def interpret({:less, a, b}, env), do: {less_than(resolve(a, env), resolve(b, env)), env}
-
-  def interpret({:less_equal, a, b}, env),
-    do: {less_than_equal(resolve(a, env), resolve(b, env)), env}
-
-  def interpret({:equal, a, b}, env), do: {equal(resolve(a, env), resolve(b, env)), env}
-  def interpret({:not_equal, a, b}, env), do: {not_equal(resolve(a, env), resolve(b, env)), env}
-  def interpret(identifier, env) when is_atom(identifier), do: {env[identifier], env}
-  def interpret(literal, env), do: {literal, env}
-
-  defp resolve(expression, env) do
-    expression
-    |> interpret(env)
-    |> elem(0)
+  def interpret({:minus, a}, env) do
+    {a, env} = interpret(a, env)
+    {minus(a), env}
   end
 
-  defp define(identifier, value, env) do
-    Map.put(env, identifier, value)
+  def interpret({:not, a}, env) do
+    {a, env} = interpret(a, env)
+    {bang(a), env}
   end
+
+  def interpret({:divide, a, b}, env) do
+    {a, env} = interpret(a, env)
+    {b, env} = interpret(b, env)
+    {divide(a, b), env}
+  end
+
+  def interpret({:multiply, a, b}, env) do
+    {a, env} = interpret(a, env)
+    {b, env} = interpret(b, env)
+    {multiply(a, b), env}
+  end
+
+  def interpret({:subtract, a, b}, env) do
+    {a, env} = interpret(a, env)
+    {b, env} = interpret(b, env)
+    {subtract(a, b), env}
+  end
+
+  def interpret({:add, a, b}, env) do
+    {a, env} = interpret(a, env)
+    {b, env} = interpret(b, env)
+    {add(a, b), env}
+  end
+
+  def interpret({:greater, a, b}, env) do
+    {a, env} = interpret(a, env)
+    {b, env} = interpret(b, env)
+    {greater_than(a, b), env}
+  end
+
+  def interpret({:greater_equal, a, b}, env) do
+    {a, env} = interpret(a, env)
+    {b, env} = interpret(b, env)
+    {greater_than_equal(a, b), env}
+  end
+
+  def interpret({:less, a, b}, env) do
+    {a, env} = interpret(a, env)
+    {b, env} = interpret(b, env)
+    {less_than(a, b), env}
+  end
+
+  def interpret({:less_equal, a, b}, env) do
+    {a, env} = interpret(a, env)
+    {b, env} = interpret(b, env)
+    {less_than_equal(a, b), env}
+  end
+
+  def interpret({:equal, a, b}, env) do
+    {a, env} = interpret(a, env)
+    {b, env} = interpret(b, env)
+    {equal(a, b), env}
+  end
+
+  def interpret({:not_equal, a, b}, env) do
+    {a, env} = interpret(a, env)
+    {b, env} = interpret(b, env)
+    {not_equal(a, b), env}
+  end
+
+  defp define(identifier, value, env) when is_atom(identifier),
+    do: Map.put(env, identifier, value)
 
   defp print(a), do: IO.puts(a)
 

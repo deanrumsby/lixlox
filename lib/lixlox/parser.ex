@@ -6,7 +6,8 @@ defmodule LixLox.Parser do
   @type literal :: number() | String.t() | boolean() | nil
 
   @type ast ::
-          literal
+            {:literal, literal()}
+          | {:identifier, atom()}
           | {:define, atom(), ast()}
           | {:print, ast()}
           | {:not_equal, ast(), ast()}
@@ -62,7 +63,10 @@ defmodule LixLox.Parser do
   end
 
   # statement -> exprStmt | printStmt
-  defp statement(), do: choice([expression_statement(), print_statement()])
+  #
+  # we have to check for print statements first to ensure correct matching
+  # because a print statement can contain an expression but not the other way around
+  defp statement(), do: choice([print_statement(), expression_statement()])
 
   # exprStmt -> expression ";"
   defp expression_statement() do
@@ -202,6 +206,7 @@ defmodule LixLox.Parser do
   defp identifier() do
     token(sequence([alpha(), many(alpha_numeric())]))
     |> map(fn [first, others] -> List.to_atom([first | others]) end)
+    |> map(fn identifier -> {:identifier, identifier} end)
   end
 
   # allows lazy evaluation of a combinator by deferring evaluation until call time
@@ -218,13 +223,18 @@ defmodule LixLox.Parser do
       [integer, nil] -> to_string(integer) |> String.to_integer()
       [integer, fractional] -> [integer | fractional] |> to_string() |> String.to_float()
     end)
+    |> map(fn number -> {:literal, number} end)
   end
 
-  defp null(), do: token(chars(~c"nil")) |> map(&List.to_atom/1)
+  defp null() do 
+    token(chars(~c"nil")) 
+    |> map(fn _ -> {:literal,  nil} end)
+  end
 
   defp boolean() do
     token(choice([chars(~c"true"), chars(~c"false")]))
     |> map(&List.to_atom/1)
+    |> map(fn bool -> {:literal, bool} end)
   end
 
   # matches one or more
