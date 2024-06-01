@@ -16,8 +16,8 @@ defmodule LixLox.Repl do
     input = IO.gets(@prompt)
 
     with {:ok, statements, _rest} <- Parser.parse(input),
-         {:ok, env} <- Interpreter.interpret(statements, env) do
-      loop(env)
+         {:ok, next_env} <- Interpreter.interpret(statements, env) do
+      loop(next_env)
     else
       {:error, message} ->
         IO.puts(message)

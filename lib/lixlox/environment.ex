@@ -5,11 +5,18 @@ defmodule LixLox.Environment do
 
   defstruct [:scope, :outer]
 
-  @type t :: %__MODULE__{scope: map(), outer: t()}
+  @type t :: %__MODULE__{scope: map(), outer: t() | nil}
 
   def new(outer \\ nil) do
-    %LixLox.Environment{scope: %{}, outer: outer}
+    %__MODULE__{scope: %{}, outer: outer}
   end
+
+  def return(env)
+
+  def return(%__MODULE__{outer: outer}) when is_map(outer),
+    do: {:ok, %__MODULE__{scope: outer.scope, outer: outer.outer}}
+
+  def return(_env), do: {:error, "no outer scope to return to"}
 
   def init(env, identifier, value \\ nil),
     do: %{env | scope: Map.put(env.scope, identifier, value)}
@@ -17,11 +24,8 @@ defmodule LixLox.Environment do
   def get(env, identifier) when is_map_key(env.scope, identifier),
     do: {:ok, env.scope[identifier]}
 
-  def get(env, identifier) when is_map(env.outer) do
-    with true <- is_map_key(env.outer, identifier) do
-      get(env.outer, identifier)
-    end
-  end
+  def get(env, identifier) when is_map(env.outer), do: get(env.outer, identifier)      
+  
 
   def get(_env, identifier), do: {:error, "undefined variable: #{identifier}"}
 

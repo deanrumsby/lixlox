@@ -13,7 +13,8 @@ defmodule LixLox.Interpreter do
     iex> LixLox.Interpreter.interpret([{:print {:add, {:literal, "hello"}, {:literal, ", world!"}}}])
     "hello, world!"
   """
-  @spec interpret(list(Parser.ast()), Environment.t()) :: {:ok, Environment.t()} | {:error, String.t()} 
+  @spec interpret(list(Parser.ast()), Environment.t()) ::
+          {:ok, Environment.t()} | {:error, String.t()}
   def interpret(statements, env \\ Environment.new()) do
     statements
     |> Enum.reduce_while({:ok, env}, fn ast, acc ->
@@ -35,8 +36,12 @@ defmodule LixLox.Interpreter do
     end
   end
 
-  # defp run({:block, block}, env) do
-  #   interpret(block, env)
+  defp run({:block, block}, env) do
+    with {:ok, env} <- interpret(block, Environment.new(env)),
+         {:ok, env} <- Environment.return(env) do
+      {:ok, nil, env}
+    end
+  end
 
   defp run({:define, {:identifier, identifer}, a}, env) do
     with {:ok, value, env} <- run(a, env) do
