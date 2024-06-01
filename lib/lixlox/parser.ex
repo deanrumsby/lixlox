@@ -9,6 +9,7 @@ defmodule LixLox.Parser do
             {:literal, literal()}
           | {:identifier, atom()}
           | {:define, atom(), ast()}
+          | {:assign, atom(), ast()}
           | {:print, ast()}
           | {:not_equal, ast(), ast()}
           | {:equal, ast(), ast()}
@@ -62,11 +63,17 @@ defmodule LixLox.Parser do
     end)
   end
 
-  # statement -> exprStmt | printStmt
+  # statement -> exprStmt | printStmt | block
   #
   # we have to check for print statements first to ensure correct matching
   # because a print statement can contain an expression but not the other way around
-  defp statement(), do: choice([print_statement(), expression_statement()])
+  defp statement(), do: choice([print_statement(), expression_statement(), block()])
+
+  # block -> "{" declaration* "}"
+  defp block() do
+    token(sequence([char(?{), lazy(fn -> many(declaration()) end), char(?})]))
+    |> map(fn [_, declarations, _] -> {:block, declarations} end)
+  end
 
   # exprStmt -> expression ";"
   defp expression_statement() do
@@ -88,7 +95,7 @@ defmodule LixLox.Parser do
   defp assignment() do
     choice([sequence([identifier(), char(?=), lazy(fn -> assignment() end)]), equality()])
     |> map(fn
-      [identifier, ?=, expression] -> {:define, identifier, expression}
+      [identifier, ?=, expression] -> {:assign, identifier, expression}
       equality -> equality
     end)
   end

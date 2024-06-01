@@ -12,7 +12,7 @@ defmodule LixLox.File do
     case Parser.parse(input) do
       {:ok, statements, _rest} ->
         statements
-        |> Enum.reduce(%{}, &(Interpreter.interpret(&1, &2) |> elem(1)))
+        |> Interpreter.interpret()
 
       {:error, reason} ->
         IO.puts(reason)

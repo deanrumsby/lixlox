@@ -5,23 +5,22 @@ defmodule LixLox.Repl do
 
   alias LixLox.Parser
   alias LixLox.Interpreter
+  alias LixLox.Environment
 
   @prompt "lixlox> "
 
   @doc """
   Starts a REPL.
   """
-  def loop(env \\ %{}) do
+  def loop(env \\ Environment.new()) do
     input = IO.gets(@prompt)
 
-    case Parser.parse(input) do
-      {:ok, statements, _rest} ->
-        statements
-        |> Interpreter.interpret()
-        |> loop()
-
-      {:error, reason} ->
-        IO.puts(reason)
+    with {:ok, statements, _rest} <- Parser.parse(input),
+         {:ok, env} <- Interpreter.interpret(statements, env) do
+      loop(env)
+    else
+      {:error, message} ->
+        IO.puts(message)
         loop(env)
     end
   end
