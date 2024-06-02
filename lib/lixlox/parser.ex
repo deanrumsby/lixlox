@@ -29,8 +29,10 @@ defmodule LixLox.Parser do
   Takes text as input and transforms it into a list of parsed statements / declarations.
 
   ## Example
+    ```elixir
     iex> LixLox.Parser.parse("var a = 3; print a + 2;")
-    [{:define :a 3}, {:print {:add :a 2}}]
+    {:ok, [{:define, {:identifier, :a}, {:literal, 3}}, {:print, {:add, {:identifier, :a}, {:literal, 2}}}], ""}
+    ```
   """
   @spec parse(String.t()) :: {:ok, list(ast()), String.t()} | {:error, String.t()}
   def parse(input) do
