@@ -46,4 +46,16 @@ defmodule LixLoxTest do
 
     assert result == {:ok, [{:block, [{:define, {:identifier, :test}, {:literal, 3}}]}], ""}
   end
+
+  test "logic and" do
+    input = "5 == 5 and 3 != 2;"
+    result = Parser.parse(input)
+
+    assert result ==
+             {:ok,
+              [
+                {:and, {:equal, {:literal, 5}, {:literal, 5}},
+                 {:not_equal, {:literal, 3}, {:literal, 2}}}
+              ], ""}
+  end
 end

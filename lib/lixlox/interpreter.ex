@@ -85,9 +85,22 @@ defmodule LixLox.Interpreter do
   end
 
   defp run({:not, a}, env) do
+    with {:ok, a, env} <- run(a, env) do
+      {:ok, bang(a), env}
+    end
+  end
+
+  defp run({:and, a, b}, env) do
     with {:ok, a, env} <- run(a, env),
-         {:ok, value} <- bang(a) do
-      {:ok, value, env}
+         {:ok, b, env} <- run(b, env) do
+      {:ok, logic_and(a, b), env}
+    end
+  end
+
+  defp run({:or, a, b}, env) do
+    with {:ok, a, env} <- run(a, env),
+         {:ok, b, env} <- run(b, env) do
+      {:ok, logic_or(a, b), env}
     end
   end
 
@@ -180,8 +193,15 @@ defmodule LixLox.Interpreter do
   defp minus(a) when is_number(a), do: {:ok, -1 * a}
   defp minus(_a), do: {:error, "minus error: unexpected type"}
 
-  defp bang(a) when is_boolean(a), do: {:ok, !a}
-  defp bang(_a), do: {:error, "not error: unexpected type"}
+  defp truthy?(a)
+  defp truthy?(nil), do: false
+  defp truthy?(false), do: false
+  defp truthy?(_a), do: true
+
+  defp bang(a), do: !truthy?(a)
+
+  defp logic_and(a, b), do: if(truthy?(a), do: b, else: a)
+  defp logic_or(a, b), do: if(truthy?(a), do: a, else: b)
 
   defp divide(a, b) when is_number(a) and is_number(b), do: {:ok, a / b}
   defp divide(_a, _b), do: {:error, "divide error: unexpected type"}

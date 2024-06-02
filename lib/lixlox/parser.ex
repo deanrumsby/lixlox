@@ -12,6 +12,8 @@ defmodule LixLox.Parser do
           | {:assign, atom(), ast()}
           | {:if, ast(), ast(), ast()}
           | {:print, ast()}
+          | {:and, ast(), ast()}
+          | {:or, ast(), ast()}
           | {:not_equal, ast(), ast()}
           | {:equal, ast(), ast()}
           | {:greater, ast(), ast()}
@@ -114,12 +116,40 @@ defmodule LixLox.Parser do
   defp expression(), do: assignment()
 
   # assignment -> IDENTIFIER "=" assignment 
-  #               | equality
+  #               | logic_or
   defp assignment() do
-    choice([sequence([identifier(), char(?=), lazy(fn -> assignment() end)]), equality()])
+    choice([sequence([identifier(), char(?=), lazy(fn -> assignment() end)]), logic_or()])
     |> map(fn
       [identifier, ?=, expression] -> {:assign, identifier, expression}
-      equality -> equality
+      logic_or -> logic_or
+    end)
+  end
+
+  # logic_or -> logic_and ( "or" logic_and )*
+  defp logic_or() do
+    sequence([logic_and(), many(sequence([chars(~c"or"), logic_and()]))])
+    |> map(fn
+      [logic_and, []] ->
+        logic_and
+
+      [logic_and_a, ors] ->
+        Enum.reduce(ors, logic_and_a, fn
+          [_, logic_and_b], prev -> {:or, prev, logic_and_b}
+        end)
+    end)
+  end
+
+  # logic_and -> equality ( "and" equality )*
+  defp logic_and() do
+    sequence([equality(), many(sequence([chars(~c"and"), equality()]))])
+    |> map(fn
+      [equality, []] ->
+        equality
+
+      [equality_a, ands] ->
+        Enum.reduce(ands, equality_a, fn
+          [_, equality_b], prev -> {:and, prev, equality_b}
+        end)
     end)
   end
 
