@@ -6,10 +6,11 @@ defmodule LixLox.Parser do
   @type literal :: number() | String.t() | boolean() | nil
 
   @type ast ::
-            {:literal, literal()}
+          {:literal, literal()}
           | {:identifier, atom()}
           | {:define, atom(), ast()}
           | {:assign, atom(), ast()}
+          | {:if, ast(), ast(), ast()}
           | {:print, ast()}
           | {:not_equal, ast(), ast()}
           | {:equal, ast(), ast()}
@@ -63,11 +64,31 @@ defmodule LixLox.Parser do
     end)
   end
 
-  # statement -> exprStmt | printStmt | block
+  # statement -> exprStmt | ifStmt | printStmt | block
   #
   # we have to check for print statements first to ensure correct matching
   # because a print statement can contain an expression but not the other way around
-  defp statement(), do: choice([print_statement(), expression_statement(), block()])
+  defp statement(),
+    do:
+      choice([print_statement(), lazy(fn -> if_statement() end), expression_statement(), block()])
+
+  defp if_statement() do
+    sequence([
+      chars(~c"if"),
+      char(?(),
+      expression(),
+      char(?)),
+      statement(),
+      optional(sequence([chars(~c"else"), statement()]))
+    ])
+    |> map(fn
+      [_, _, expression, _, statement, nil] ->
+        {:if, expression, statement, nil}
+
+      [_, _, expression, _, statement, [_, else_statement]] ->
+        {:if, expression, statement, else_statement}
+    end)
+  end
 
   # block -> "{" declaration* "}"
   defp block() do
@@ -234,13 +255,13 @@ defmodule LixLox.Parser do
     |> map(fn number -> {:literal, number} end)
   end
 
-  defp null() do 
-    token(chars(~c"nil")) 
-    |> map(fn _ -> {:literal,  nil} end)
+  defp null() do
+    chars(~c"nil")
+    |> map(fn _ -> {:literal, nil} end)
   end
 
   defp boolean() do
-    token(choice([chars(~c"true"), chars(~c"false")]))
+    choice([chars(~c"true"), chars(~c"false")])
     |> map(&List.to_atom/1)
     |> map(fn bool -> {:literal, bool} end)
   end
@@ -261,7 +282,7 @@ defmodule LixLox.Parser do
   defp digit(), do: satisfy(char(), &(&1 in ?0..?9))
 
   # takes a charlist eg. chars(~c"hello") to match against
-  defp chars(expected), do: sequence(Enum.map(expected, &char(&1)))
+  defp chars(expected), do: token(sequence(Enum.map(expected, &char(&1))))
 
   # matches a single expected character
   defp char(expected) do

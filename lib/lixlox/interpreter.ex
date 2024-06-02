@@ -43,6 +43,20 @@ defmodule LixLox.Interpreter do
     end
   end
 
+  defp run({:if, expression, statement, nil}, env) do
+    with {:ok, true, env} <- run(expression, env),
+         {:ok, value, env} <- run(statement, env) do
+      {:ok, value, env}
+    end
+  end
+
+  defp run({:if, expression, _statement, else_statement}, env) do
+    with {:ok, false, env} <- run(expression, env),
+         {:ok, value, env} <- run(else_statement, env) do
+      {:ok, value, env}
+    end
+  end
+
   defp run({:define, {:identifier, identifer}, a}, env) do
     with {:ok, value, env} <- run(a, env) do
       {:ok, value, define(identifer, value, env)}
@@ -194,9 +208,9 @@ defmodule LixLox.Interpreter do
   defp less_than_equal(a, b) when is_number(a) and is_number(b), do: {:ok, a <= b}
   defp less_than_equal(_a, _b), do: {:error, "less than equal error: unexpected type"}
 
-  defp equal(a, b) when is_number(a) and is_number(b), do: {:ok, a == b}
-  defp equal(a, b), do: {:ok, a === b}
+  defp equal(a, b) when is_number(a) and is_number(b), do: a == b
+  defp equal(a, b), do: a === b
 
-  defp not_equal(a, b) when is_number(a) and is_number(b), do: {:ok, a != b}
-  defp not_equal(a, b), do: {:ok, a !== b}
+  defp not_equal(a, b) when is_number(a) and is_number(b), do: a != b
+  defp not_equal(a, b), do: a !== b
 end
