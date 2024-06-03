@@ -11,6 +11,7 @@ defmodule LixLox.Parser do
           | {:define, atom(), ast()}
           | {:assign, atom(), ast()}
           | {:if, ast(), ast(), ast()}
+          | {:while, ast(), ast()}
           | {:print, ast()}
           | {:and, ast(), ast()}
           | {:or, ast(), ast()}
@@ -68,14 +69,27 @@ defmodule LixLox.Parser do
     end)
   end
 
-  # statement -> exprStmt | ifStmt | printStmt | block
+  # statement -> exprStmt | ifStmt | printStmt | whileStmt | block
   #
   # we have to check for print statements first to ensure correct matching
   # because a print statement can contain an expression but not the other way around
   defp statement(),
     do:
-      choice([print_statement(), lazy(fn -> if_statement() end), expression_statement(), block()])
+      choice([
+        print_statement(),
+        lazy(fn -> if_statement() end),
+        expression_statement(),
+        lazy(fn -> while_statement() end),
+        block()
+      ])
 
+  # whileStmt -> "while" "(" expression ")" statement
+  defp while_statement() do
+    sequence([chars(~c"while"), char(?(), expression(), char(?)), statement()])
+    |> map(fn [_, _, expression, _, statement] -> {:while, expression, statement} end)
+  end
+
+  # ifStmt -> "if" "(" expression ")" statement ( "else" statement )?
   defp if_statement() do
     sequence([
       chars(~c"if"),
