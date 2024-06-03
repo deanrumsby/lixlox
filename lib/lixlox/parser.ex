@@ -86,6 +86,8 @@ defmodule LixLox.Parser do
       ])
 
   # forStmt -> "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement
+  #
+  # for loop is implemented as syntactic sugar for while loop
   defp for_statement() do
     sequence([
       chars(~c"for"),
@@ -100,6 +102,9 @@ defmodule LixLox.Parser do
     |> map(fn
       [_, _, initializer, condition, _, increment, _, {:block, declarations}] ->
         {:block, [initializer, {:while, condition, {:block, declarations ++ [increment]}}]}
+
+      [_, _, initializer, condition, _, increment, _, statement] ->
+        {:block, [initializer, {:while, condition, {:block, [statement, increment]}}]}
     end)
   end
 

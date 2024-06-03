@@ -36,3 +36,4 @@ oriented strategies used in the book.
 Currently I am able to parse and interpret all arithmetic expressions and basic logical operators with the basic types.
 I have an environment implementation now in place so you are able to assign variables and use them within
 expressions, which now also includes block scoping.
+Loops have been implemented, so the use of while and for loops is now supported.
