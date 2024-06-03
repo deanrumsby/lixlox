@@ -44,16 +44,22 @@ defmodule LixLox.Interpreter do
   end
 
   defp run({:if, expression, statement, nil}, env) do
-    with {:ok, true, env} <- run(expression, env),
-         {:ok, value, env} <- run(statement, env) do
-      {:ok, value, env}
+    with {:ok, expression, env} <- run(expression, env) do
+      if truthy?(expression) do
+        run(statement, env)
+      else
+        {:ok, nil, env}
+      end
     end
   end
 
-  defp run({:if, expression, _statement, else_statement}, env) do
-    with {:ok, false, env} <- run(expression, env),
-         {:ok, value, env} <- run(else_statement, env) do
-      {:ok, value, env}
+  defp run({:if, expression, statement, else_statement}, env) do
+    with {:ok, expression, env} <- run(expression, env) do
+      if truthy?(expression) do
+        run(statement, env)
+      else
+        run(else_statement, env)
+      end
     end
   end
 
