@@ -44,8 +44,8 @@ defmodule LixLox.Interpreter do
   end
 
   defp run({:while, expression, statement}, env) do
-    with {:ok, resolved_expression, env} <- run(expression, env) do
-      if truthy?(resolved_expression) do
+    with {:ok, value, env} <- run(expression, env) do
+      if truthy?(value) do
         with {:ok, _value, env} <- run(statement, env) do
           run({:while, expression, statement}, env)
         end
@@ -56,8 +56,8 @@ defmodule LixLox.Interpreter do
   end
 
   defp run({:if, expression, statement, nil}, env) do
-    with {:ok, expression, env} <- run(expression, env) do
-      if truthy?(expression) do
+    with {:ok, value, env} <- run(expression, env) do
+      if truthy?(value) do
         run(statement, env)
       else
         {:ok, nil, env}
@@ -66,8 +66,8 @@ defmodule LixLox.Interpreter do
   end
 
   defp run({:if, expression, statement, else_statement}, env) do
-    with {:ok, expression, env} <- run(expression, env) do
-      if truthy?(expression) do
+    with {:ok, value, env} <- run(expression, env) do
+      if truthy?(value) do
         run(statement, env)
       else
         run(else_statement, env)

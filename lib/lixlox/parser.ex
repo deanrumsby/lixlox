@@ -10,6 +10,7 @@ defmodule LixLox.Parser do
           | {:identifier, atom()}
           | {:define, atom(), ast()}
           | {:assign, atom(), ast()}
+          | {:block, list(ast())}
           | {:if, ast(), ast(), ast()}
           | {:while, ast(), ast()}
           | {:print, ast()}
@@ -64,12 +65,12 @@ defmodule LixLox.Parser do
       ])
     )
     |> map(fn
-      [_, identifier, nil, _] -> {:define, identifier, nil}
+      [_, identifier, nil, _] -> {:define, identifier, {:literal, nil}}
       [_, identifier, [_, expression], _] -> {:define, identifier, expression}
     end)
   end
 
-  # statement -> exprStmt | ifStmt | printStmt | whileStmt | block
+  # statement -> exprStmt | forStmt | ifStmt | printStmt | whileStmt | block
   #
   # we have to check for print statements first to ensure correct matching
   # because a print statement can contain an expression but not the other way around
@@ -77,11 +78,30 @@ defmodule LixLox.Parser do
     do:
       choice([
         print_statement(),
+        for_statement(),
         lazy(fn -> if_statement() end),
         expression_statement(),
         lazy(fn -> while_statement() end),
         block()
       ])
+
+  # forStmt -> "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement
+  defp for_statement() do
+    sequence([
+      chars(~c"for"),
+      char(?(),
+      choice([variable_declaration(), expression_statement(), char(?;)]),
+      optional(expression()),
+      char(?;),
+      optional(expression()),
+      char(?)),
+      lazy(fn -> statement() end)
+    ])
+    |> map(fn
+      [_, _, initializer, condition, _, increment, _, {:block, declarations}] ->
+        {:block, [initializer, {:while, condition, {:block, declarations ++ [increment]}}]}
+    end)
+  end
 
   # whileStmt -> "while" "(" expression ")" statement
   defp while_statement() do
